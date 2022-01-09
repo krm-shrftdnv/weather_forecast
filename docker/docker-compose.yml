@@ -1,0 +1,48 @@
+version: "3.4"
+
+services:
+  php-fpm:
+    container_name: php-fpm
+    build:
+      context: ./php-fpm
+    depends_on:
+      - db
+    volumes:
+      - ./../weather_forecast/:/var/www
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@database:5432/weather_forecast?serverVersion=13&charset=utf8
+      APP_ENV: dev
+      APP_SECRET: 8da12483963aed7016780519d9fe60d8
+      YANDEX_API_KEY: 2d3ada93-a05b-4b9b-b98b-b18417666af0
+      OPEN_WEATHER_MAP_API_KEY: 9298c3221519e9ecec2d86e9ed603750
+      WEATHERBIT_API_KEY: 761d826895824fcea3f191e88bdb4c4f
+
+  database:
+    container_name: database
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_DB: weather_forecast
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    ports:
+      - 5433:5432
+#    command: chmod -R 0750 /var/lib/postgresql/data
+    volumes:
+      - ./db-data:/var/lib/postgresql
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx
+    volumes:
+      - ./../weather_forecast/:/var/www
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites/:/etc/nginx/sites-available
+      - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./logs:/var/log
+    depends_on:
+      - php-fpm
+    ports:
+      - 80:80
+      - 443:443
